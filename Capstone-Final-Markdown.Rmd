@@ -1,0 +1,1597 @@
+---
+title: "Salt Lake County Jail Resource and Reentry Program Early Evaluation"
+subtitle: "University of Utah Master of Public Policy Capstone"
+author: "Marni Epstein"
+date: "April 23, 2023"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+bibliography: References/References.bib 
+csl: References/apa.csl
+nocite: '@*'
+---
+
+
+<style type="text/css">
+
+h1 {
+  color: #1f77b4;
+}
+h2 {
+  color: #1f77b4;
+}
+h3 {
+  color: #1f77b4;
+}
+
+h1.title {
+  font-size: 38px;
+  text-align: center;
+}
+h3.subtitle {
+  font-size: 18px;
+  text-align: center;
+  color: black;
+}
+h4.author { /* Header 4 - and the author and data headers use this too  */
+    font-size: 18px;
+  text-align: center;
+}
+h4.date { /* Header 4 - and the author and data headers use this too  */
+  font-size: 18px;
+  text-align: center;
+}
+</style>
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+library(flexdashboard)
+library(tidyverse)
+library(plotly)
+library(formattable)
+
+library(knitr)
+library(kableExtra)
+library(margins)
+
+# Survival anlysis
+library(survival)
+library(survminer)
+library(ggfortify)
+
+```
+
+```{r}
+
+# Read in merged data
+load("Data/mergeddata.RData")
+
+```
+
+<br/><br/><br/><br/>
+
+# Executive Summary
+
+The Jail Resource Reentry Program (JRRP) is a new program within the Salt Lake County Metro Jail that provides information, services, and referrals to recently released individuals as they leave the jail. JRRP aims to help individuals navigate the transition from jail back into the community, and its goals are to connect individuals to services and support systems; reduce disruptive behavior in the community after release; and decrease the likelihood of re-offence and recidivism. 
+
+JRRP was created and is currently staffed through a partnership between the Salt Lake County Sheriff’s Office, Salt Lake County’s Criminal Justice Services (CJS), Valley Behavioral Health, and the Salt Lake Legal Defenders. The new program was conceived after Salt Lake County identified a gap between jail release, coordinated by the Sheriff’s Office, and post-release services, provided by CJS. JRRP is funded by a combination of funds from a federal Bureau of Justice Assistance grant, County matching funds, and the American Rescue Plan Act (ARPA). The program started with limited hours on April 1, 2022, and has since expanded hours to 7AM-11PM on weekdays and 7AM-3PM on weekends.
+
+Other jurisdictions across the country have developed similar programs aimed at connecting individuals exiting jails and other public incarceration institutions with resources as they reenter the community, but no other programs have a physical location inside the jail. JRRP is located in a room immediately after the door that individuals walk through upon release and before the jail exit. Consequently, individuals walk past JRRP staff when exiting the jail to return to the community. Yet, JRRP is an optional resource and referral program, thus complicating identification of its impact.
+
+This early evaluation examines participation and outcomes during the first year of the JRRP program by linking JRRP data on individuals who utilized the program to jail booking data from the Sheriff’s Office. To test whether there is non-random selection into JRRP, I examine unadjusted differences in individual- and charge-level characteristics between JRRP and non-JRRP participants, such as demographic characteristics, charges, criminal justice history, and length of time in jail. To estimate the association between JRRP participation and recidivism, I consider re-booking rates for multiple time periods (30-days, 60-days, 90-days, and 6-months) and by charge type (all causes, new charges, and warrant services) as outcomes. I estimate re-booking rates by JRRP participation status using logistic regression to account for multiple covariates that may influence selection into JRRP and recidivism. Lastly, I use survival analysis techniques to model differences in time to re-booking.
+
+Preliminary findings indicate some evidence of selection into JRRP, though the differences are small. The most notable differences are booking reason and number of previous bookings, with JRRP participants more likely to be booked on a new charge and to have no previous bookings. This indicates that JRRP may serve as a valuable resource for first-time offenders, who are likely less familiar with the criminal justice system, and those facing new charges, which carry new required proceedings.
+
+The different analytic approaches all find that re-booking rates are similar, or higher, among JRRP participants relative to non-participants for bookings for any cause and for bookings due to new charges. These higher rates in the JRRP population may illustrate the constraints of a referral program, limited by availability of community resources. All three methods show a slight decrease in re-booking rates due to warrant services, corroborating the finding that the most utilized JRRP services relate to legal system information. JRRP shows promising potential to lower re-booking rates due to warrant services by addressing information gaps and providing assistance in navigating the next steps in the criminal justice system.
+
+
+
+# Introduction
+
+In  Salt Lake County (SLCo), as in the rest of the country, individuals released from incarceration face numerous reintegration challenges when reentering the community. Common challenges include difficulties accessing behavioral and physical health care, finding stable housing, navigating the criminal justice system, and dealing with waiting periods before receiving social services (Li, 2018). Involvement with the criminal justice system can carry lasting consequences, such as limiting employment prospects, public housing assistance, student loans, other social services, and the ability to vote (*Barriers to Successful Re-Entry of Formerly Incarcerated People*, 2017; Li, 2018).
+
+The SLCo Metro & Oxbow Jail, the primary jail in Salt Lake County, releases around 75 individuals per day (*Jail Dashboard*, n.d.). Many people leave jail without receiving legal, social, physical, or behavioral health support to address ongoing needs, and often return to the same circumstances as before their arrest. The lack of reentry support and the subsequent gap in the continuity of care from jail to community reentry contribute to the recidivism cycle. 
+
+Recidivism, as measured by jail re-booking rates, is high in Salt Lake County. In 2018, 12.4% of released individuals from the SLCo Metro Jail were re-booked on new charges within 30 days, 27.5% within 90 days, and 40.5% within 180 days (Mayor’s Office of Criminal Justice Initiatives, n.d.). The lack of resources surrounding the transition from jail to community reentry likely contribute to the cycle of recidivism and the subsequent high re-booking rates. Salt Lake County leadership from the Sheriff’s Office, Criminal Justice Services (CJS), Human Services, and Behavioral Health envisioned a reentry center, located in the jail, to fill this gap. The Jail Resource Reentry Program (JRRP) opened its doors in the spring of 2022. This analysis evaluates program outcomes in its first year.
+
+## Background
+Nationally, the criminal justice population has surged in the United States, growing 500% over the past 40 years (*Growth in Mass Incarceration*, 2022). This growth is largely attributable to changes in sentencing law and policy, rather than changes in crime rates (*Growth in Mass Incarceration*, 2022; National Research Council, 2014). Policies and practices over the past half decade grew out of the “War on Crime” and “War on Drugs” federal initiatives that began in the 1960s and continued through the early 2000s (John, 2014). Under these new policies, arrest rates surged, largely due to increases in drug arrests (*Emerging Findings*, n.d.), individuals spent more time in jail awaiting trial, and post-conviction sentences lengthened as sentencing laws became more punitive (Lattimore et al., 2021). Minority communities were disproportionately targeted by the rise in mass incarceration, as African Americans are incarcerated at more than five times the rate of White individuals (*Criminal Justice Fact Sheet*, 2021). These racial disparities exist even after accounting for poverty, and are particularly prevalent in drug sentencing despite similar rates of illicit drug use (Hayes & Barnhorst, 2020).
+
+As the overall number of incarcerated people surged, the share with mental health needs rose steeply while hospital psychiatric facilities simultaneously closed across the country. From 1955 to 2000, the number of state psychiatric beds declined from 339 to 22 per 100,000 people, and concurrently, the share of inmates with a mental health condition in the criminal justice system rose from 16% in 1976 to 44% in 2011-12 (Gao, 2021). Law enforcement is increasingly called upon to respond to medical, mental health, and economic problems unrelated to public safety (Jones & Sawyer, 2019). According to the Police Executive Research Forum (2018), “As mental health treatment facilities have closed or been scaled back, county jails have become the de facto mental health care system for large numbers of individuals in many communities.” As a result, many individuals with mental illnesses, especially those who are unsheltered, are arrested for minor offenses such as public urination, open container violations, or trespassing, and, even if they are experiencing a mental health crisis, jail is often the only available place to take them (Police Executive Research Forum, 2018).  
+
+All individuals, and especially those with behavioral health needs or who will return to unsheltered living upon release, face barriers when exiting jail and reentering the community. Communities and local jurisdictions across the country have developed programs to connect individuals exiting jails and other public institutions with resources as they reenter the community. SAMHSA’s “Guidelines for Successful Transition of People with Mental or Substance Use Disorders from Jail and Prison: Implementation Guide” (2017) highlights the necessity of formalized continuity of services from institution to the community setting to improve individual-level outcomes and reduce recidivism.
+
+The  Gwinnet County Jail in Georgia, for example, developed a program in 2011, the Gwinnet Reentry Intervention Program, in partnership with the Gwinnet County Sheriff’s Office and United Way (*Gwinnett Re-Entry Intervention Program (GRIP)*, n.d.). United Way contacts incarcerated individuals pre-release and works to connect them to resources such as housing, case management, access to mental health and substance use disorder treatment, and job assistance. Unlike JRRP in the Salt Lake County Metro Jail, the staff and physical space for the program are outside of the jail. Similarly, the Polk County Sheriff’s Office collaborated with other county agencies and service providers to develop the Helping HANDS program in Polk County, FL (*Helping HANDS/HATCH*, n.d.). The program identifies inmates with multiple arrests for minor offenses who take psychotropic medications for mental illnesses. The Sheriff’s Office invites community paramedics into the jail prior to the inmate’s release, and they connect participants with behavioral health providers and other social service programs. Certified recovery peer specialists are also available to help connect participants with services and advocate for participants. 
+
+Bernalillo County, NM developed the Resource Re-Entry Center (RRC), which opened in 2018 (Department of Behavioral Health Services, n.d.; “Resource Re-Entry Center,” n.d.). Upon release, a shuttle transports individuals to downtown Albuquerque, dropping them off at the RRC. The RRC is a voluntary program and individuals must pass through the center to exit onto the street, following a similar model as JRRP. At the RRC, individuals can charge their phone, use the bathroom, access Wi-Fi and use a computer, wait for a ride, or have a safe place to stay until morning. RRC staff members are also available to connect individuals with resources such as transportation, shelter, case management, behavioral health services, Medicaid enrollment, pretrial services, prescription access, and Narcan education and access. The center is staffed by Bernalillo County employees as well as contracted partners from the University of New Mexico.
+
+The Vera Institute of Justice evaluated reentry programs in Los Angeles County (Sandwick et al., 2013). Several reentry programs and services are offered in the county, including programs that take place during incarceration and continue post-release, programs for specific subgroups such as veterans and persons with substance use disorders, and programs that coordinate housing for individuals post-release. The Vera Institute interviewed men held in custody about their reentry needs and found that the highest reported needs were employment, housing, and substance use treatment. Most interviewees expressed a desire to receive services, though only a fifth had been offered services related to their reentry needs. The Vera Institute identified several recommendations to improve reentry services, such as tailoring reentry services to the jail environment and individual clients, incorporating risk and needs assessments into reentry services, and enhancing collaboration among jail and community-based partners and county agencies.
+
+Findings  on the impacts of reentry programs on recidivism rates are mixed. Researchers evaluated impacts from seven reentry programs that were developed by grantees of funds from the Second Chance Act Adult Demonstration Program (D’Amico & Kim, 2018). These programs focused mainly on providing case management post-release, with some included other pre-release and post-release services such as employment assistance, substance abuse treatment, and cognitive behavioral therapy. The evaluation used a randomized controlled trial design for all seven reentry programs, where individuals were randomly assigned to receive reentry services developed under the grant or a control group that could receive services otherwise available. In the 30 months following random assignment, participants who received enhanced reentry services were equally likely to be re-arrested, re-convicted, or re-incarcerated and their time to re-arrest or re-incarceration was no shorter relative to the control group. However, the intervention group had better longer-term employment and earnings. The authors hypothesize that the program funding may not have been adequate to meet the many, complex needs of those returning to the community. 
+
+Another study also used a randomized experimental design to evaluate the effectiveness of the Minnesota Comprehensive Offender Reentry Plan, a reentry pilot program that aimed to increase access to community services and decrease recidivism (Duwe, 2012). In this model, caseworkers began working with clients pre-release and continued post-release. Caseworkers focused on helping clients access services such as employment, education, housing, and health. The evaluation found that program participants had significantly higher employment rate, decreased homelessness, and increased rates of social service engagement post-release. The program was found to significantly reduce rates of re-arrest, re-conviction, and re-offense.
+
+## Salt Lake County’s Jail Resource and Reentry Center (JRRP)
+
+JRRP is a resource and referral program that has a physical location within the SLCo jail and opened in the summer of 2022 (*Salt Lake County Jail Resource Reentry Program Grand Opening*, 2022). The program is located in a room past the doors that individuals walk through upon release and before the doors that lead to the jail’s exit. JRRP’s strategic location means individuals walk through the JRRP program when exiting the jail, except for those transported directly to another location, such as those transferring to prison or transported directly to a treatment bed. JRRP is a voluntary referral program where staff can provide information about next steps in the legal process and connect individuals to housing and food assistance programs, Medicaid enrollment, and other resources. The physical space, designed to be trauma-informed, also provides outlets and couches, offering recently released persons a place to charge cell phones, call family or friends to arrange pick up, or make plans for where to go. While other counties and jurisdictions have enacted reentry programs, JRRP’s unique physical location in the jail’s exit pathway sets it apart.
+
+JRRP  was envisioned in 2020 when Salt Lake County leadership from the SLCo Sheriff’s Office (Sheriff’s Office), Criminal Justice Services (CJS), Human Services, and Behavioral Health came together to discuss the gap in the continuity of care from jail to community reentry. Many individuals were released quickly from jail, and often unpredictably, landing them in similar circumstances that led to their arrest. Many were released only to immediately confront homelessness, addiction, untreated mental illness, employment barriers, and other challenges (Salt Lake County Human Services, 2021).
+
+In 2018, the SLCo Jail processed 32,015 releases for 19,708 unique persons (Mayor’s Office of Criminal Justice Initiatives, n.d.). Of those individuals released, 19% were homeless, 44% screened as having a substance use disorder (34% severe), 26% received a mental health treatment referral, and 8% screened as having serious and persistent mental illness (SPMI). Across the total jail population in 2018, there was an average of 1.62 processed releases per  individual. Realistically, many releases were attributable to a smaller and recognizable group of low-level repeat offenders who are oftentimes booked and released on citations or low-level charges that normally do not receive treatment referrals. These “familiar faces” were incarcerated for less than 24 hours, considered to have SPMI or substance abuse disorder, and easily recognized by Deputies and SLCo Jail staff.
+
+The Sheriff’s Office coordinates jail releases but does not provide support services to prepare inmates for release. In turn, CJS provides post-release services for eligible individuals released to pretrial supervision, specialty court, or probation. However, a gap exists between these two systems, and those not required to remain engaged with CJS post-release never receive support during the transition back to the community. Further, many individuals are released from jail with untreated substance use disorders and mental illness, medical needs, homelessness, and other challenges that contribute to increased chances of re-arrest.
+
+The lack of a consistent, countywide system for pre-release planning at the SLCo Jail results in many individuals being released without access to or information regarding existing support systems. Furthermore, many clients are lost to service retention when they were released from jail without a “warm handoff” to an established local agency. A warm handoff is a direct transfer from one service provider to another. Thus, JRRP was established to fill this gap.
+
+JRRP has a three-year budget of \$5,307,740. One million dollars in funding was received from a Federal Bureau of Justice Grant: Innovations in Re-entry Initiative Building System Capacity and Testing Re-entry Strategies (Salt Lake County Jail Release Resource Center, n.d.). One million dollars is committed by Salt Lake County as part of a county match required by the BJA grant. An additional $3,307,740 is funded through  American Rescue Plan Act (ARPA) funding (Salt Lake County, 2022).
+
+The program opened with limited hours on April 1, 2022, and hours were expanded on the following dates:
+
+* April 1, 2022 – 4-hour blocks three days per week (hours varied)
+* April 27, 2022 – Monday – Friday, 7am-3pm 
+* May 31, 2022 – Monday – Friday, 7am-7pm 
+* October 3, 2022 – Monday – Friday, 7am-11pm 
+* October 30, 2022 – Saturday/Sunday 7am-3pm
+
+JRRP is staffed by individuals from three organizations: CJS, Salt Lake Legal Defenders Association (LDA), and Valley Behavioral Health. Additionally, the Sheriff’s Office provides oversight and security as part of JRRP’s location within the jail.
+
+The purpose of this research effort is to conduct an early evaluation of the utilization of JRRP services in its first year and test whether the program is associated with reduced re-booking rates. It is hypothesized that selection bias occurs in the self-selecting JRRP population, with JRRP participants more likely to have had shorter stays in jail and to have lower-level charges. Further, it is hypothesized that individuals who utilize the JRRP program will have lower re-booking rates than eligible non-participants.
+
+
+
+
+
+# Methods
+
+## Data and Sample
+
+Information about each JRRP interaction is recorded onto a Smartsheet form by JRRP staff members. Collected data includes client name and SO number, a unique identifier used in the jail, release date, and what service and referrals were provided. JRRP Smartsheet data was accessed from the Salt Lake County’s SQL server, where data is updated nightly. Data was pulled from the database on April 14, 2023. All records from the program’s start date on April 1st, 2022 to March 31st, 2023 were included. The JRRP data contained 3,263 records. 
+
+The JRRP data contained a field where the staff member entered the client’s release date and another field that was automatically created by the Smartsheet that contained the data entry date. These fields contained different dates in approximately one-third of records (1,027). When the release date entered occurred prior to April 1, 2022, the value was replaced with the date in the entry date field. When the release date value was empty, the entry date value was used. Aside from these two situations, the release date was used to merge the JRRP data with the jail data. Data cleaning was performed to merge duplicate records and/or identify the correct record when duplicate records existed by SO number by looking individuals up by name in the jail data. 95.2% of JRRP records were successfully merged with jail data.
+
+Jail data were accessed from the Salt Lake County’s SQL server, which receives a direct feed of data from the jail’s Offender Management System. Data was pulled from the database on April 14, 2023 for all bookings with a release date between April 1, 2022 and March 31, 2023 (26,699 bookings). The data included information about bookings, such as clients’ SO number, booking date, release date, and other information addressing reasons for booking and release. 
+
+Demographic  data and charge data were also extracted from the database, including the maximum charge severity associated with the booking and the charge associated with the law enforcement encounter reason. For example, an individual may be stopped by the police for a minor infraction, such as public intoxication. During the law enforcement encounter, the officer may identify a preexisting warrant for a higher degree charge, such as murder. The individual's booking record will show warrant charges that reflect previous open charges, as well as charges that were filed in the subsequent days after booking and before release. The maximum charge associated with the booking shows the maximum charge, whether from an earlier warrant, filed after arrest, or the reason for the law enforcement encounter. In this example, the maximum charge is murder. The charge associated with the law enforcement encounter is the highest charge associated with the primary case for the particular booking, which is usually the reason the law enforcement encounter was initiated. In this example, the charge associated with the law enforcement encounter is public intoxication. This measure may indicate the severity of the crime that led to the law enforcement encounter, but not necessarily the severity of the crime associated with the length of time an individual remains in jail.
+
+The charge data contained a field called booking reason, which indicates whether the charge was a new charge or a warrant service. The booking reason from the charge associated with the law enforcement encounter was used. In the above example, the charge connected to the law enforcement encounter was a new charge—public intoxication. Resultingly, the booking reason would be a new charge, even if the individual had a warrant out for something else.
+
+JRRP data and jail data were merged using SO number and release date. Of the JRRP records, 3,110 records (95.2% of all records) merged with jail booking records, and 148 records (4.8% of all records) did not successfully merge. The records that did not merge with corresponding jail booking data likely had a data entry error in either the SO number or the release date. These records will be manually cleaned for future analyses.
+
+This study received full IRB approval through the University of Utah.
+
+## Measures
+
+Records were coded as “qualifying releases” based on the listed reason for release. Individuals who are released back into the community are almost always released for “qualifying releases.” Most non-qualifying releases are release types where individuals are transported directly to another location, such as prison or to treatment. Only qualifying releases walk through the physical JRRP room and can utilize JRRP services. Qualifying release types include:
+
+* BAL – Cash bail
+*	BND – Bonded
+*	DIS – Charges dismissed 
+*	NOC – No complaint
+*	NPC – No probable cause
+*	OCD - Other county declined
+*	OCR - Overcrowd release
+*	ORL - Order release
+*	ORP - Order release pretrial serv
+*	PFR - Prefile release
+*	PRB - Property bond
+*	PT$ - Pre-trial & cash
+*	PTA - Promise to appear
+*	PTB - Pre-trial & bond
+*	PTR - Pre-trial own recognizance
+*	PTS - Pre-trial supervised release
+*	SUM - Book & release summons
+*	TMS – Time served
+*	Unsecured bond
+
+To address the expansion of JRRP operational hours, a variable was created to indicate whether the release occurred during JRRP operational hours. 
+
+Re-booking outcome variables were created for four time periods: 30 days, 60 days, 90 days, and 6-months (182 days). Each variable was coded as a binary variable on the booking-level data indicating whether the individual from that booking was re-booked within the given time frame. Three versions of each time-frame variable were created: re-booked for any reason, re-booked on new charges, and re-booked on warrant charges. This resulted in 12 re-booking outcome variables.
+
+April 2022 data was dropped for most of the analysis because JRRP opened on April 1st, 2022, and hours did not become regular until April 27th, 2022.  Thus, there was no feasible way to determine which releases occurred during JRRP operational hours. As indicated in the results section, data was frequently analyzed using only individuals’ first record in the study period (May 1, 2022 to March 31, 2023; 11 months of data). This ensured that each individual was included in the data only once, eliminating a higher weight being assigned to individuals with multiple bookings in the full dataset.
+
+## Analysis Plan
+
+A descriptive analysis was first performed on JRRP data where participation and services were examined. Demographic characteristics and criminal justice involvement data was compared between individuals who utilized JRRP and those who did not, providing a lens into the selection bias that may occur in the self-selecting JRRP population. 
+
+Next, re-booking rates were examined. Unadjusted, raw re-booking rates were examined for the 12 re-booking measures. A logistic regression model was then constructed to measure the association between the JRRP program and re-booking odds, controlling potential confounding variables. Odds ratios and their 95% confidence intervals are presented. Marginal effects are reported for the effect of the JRRP intervention, holding other variables constant at their means. Sensitivity analyses were performed by examining logistic regression models that included interaction terms to measure whether other variables, such as maximum charge, previous bookings, and number of days in jail, moderated the effect of the JRRP intervention.
+
+Lastly, survival analyses were performed. Survival or time-to-event analysis is a statistical technique used to measure the expected duration until an event occurs. In this context, survival analysis was used to measure the timing in days until re-booking by JRRP and non-JRRP participants. The Kaplan-Meier approach was used to model survival probability (i.e. probability of not being re-booked) by day after release, for JRRP and non-JRRP participants. Following the Kaplan-Meier approach, data was “censored” for individuals who were never re-booked in the time period. In other words, an indicator was constructed to specify that the outcome is only assessed until the end of the study period (by when the individual had not been re-booked). Survival plots are shown for the probability of the event (re-booking) rather than the probability of survival (not being re-booked). A Cox Proportional Hazards Regression model was then constructed. This model examines the effects of several variables on the time to a specific event, allowing for the inclusion of control variables.
+
+
+
+# Results
+
+## Descriptive Analysis
+
+### JRRP Interactions
+
+```{r}
+
+s <- jrrp %>% 
+  mutate(RELEASE_MONYR = factor(format(RELEASE_DATE, "%b-%y"),
+                                levels = c(levels = "Apr-22", "May-22", "Jun-22", "Jul-22", "Aug-22", "Sep-22", "Oct-22", "Nov-22", "Dec-22", "Jan-23", "Feb-23", "Mar-23")
+                                ),
+         interactions = 1
+  ) %>% 
+  group_by(RELEASE_MONYR) %>% 
+  # JRRP interactions by month
+  summarize(interactions = sum(interactions)) %>% 
+  # Cumulative interactions
+  mutate(cuminteractions = cumsum(interactions),
+         cuminteractions = prettyNum(cuminteractions, big.mark=",")) %>% 
+  # Filter out interactions with a missing month (just 1)
+  filter(!is.na(RELEASE_MONYR))
+
+# Total JRRP Interactions
+totint <- format(sum(s$interactions), big.mark = ",")
+
+# Unique people served in JRRP
+unq <- length(unique(jrrp$SO_NUMBER))
+unq <- format(unq, big.mark = ",")
+
+```
+
+
+
+Since opening, JRRP has served `r totint` people, and `r unq` unique individuals. The number of individuals served per month remained steady around 175 to 225 from June 2022 to October 2022. In the following months, the number of people served per month increased, rising to 466 in January 2023. In March 2023, 573 people received services through JRRP, the most served in any month since opening.
+
+JRRP interactions counts the number of individuals served in JRRP. An interaction consists of an individual utilizing a JRRP service beyond charging their phone or taking water; participants must engage with a JRRP staff member. Individuals can utilize JRRP on every jail release, if they have multiple releases. 
+
+
+
+
+```{r}
+# Plot JRRP Interactions by month
+plot_ly(s, x = ~RELEASE_MONYR, y = ~interactions, marker = list(color="#1f77b4")) %>% 
+  add_trace(type = "bar",
+            # Add tooltip. <extra></extra> removes the grouping from the tooltip
+            hovertemplate = paste0("<b>%{x}</b>",
+                                  "<br>JRRP Interactions: %{y}",
+                                  "<br>Total JRRP Interactions: ", s$cuminteractions, "<extra></extra>"),
+            texttemplate = '%{y}', textposition = 'outside'
+            ) %>%
+  layout(
+    title = "Number of JRRP Interactions by Month",
+    xaxis = list(title = "Number of interactions"),
+    yaxis = list(title = ""),
+    margin = list(l = 100, r = 50, b = 100, t = 50, pad = 6)
+  )
+
+
+```
+*Note: All JRRP interactions are included.*
+
+
+
+### Referrals and Services
+The majority of referrals and services provided at JRRP related to the legal system. Out of the `r totint` total JRRP interactions, the top two services provided were court information (1,535) and supervision information (1,301). The third most common service provided was a referral to other needs, which may include clothing, household, leisure, or other topics.
+
+JRRP staff can provide individualized, specific information about the next steps in the legal process for clients. They can look up information for clients such as upcoming court dates, next steps in the pretrial supervision or probation process, the terms of their jail release agreement, and answer questions that clients may have. JRRP staff can submit an application for clients to enroll in Targeted Adult Medicaid and can refer clients to other pathways of Medicaid enrollment for those who eligible. JRRP staff can distribute vouchers for Crossroads Urban Thrift Store. Staff are able to call mental health and substance use disorder treatment centers as well as detox facilities. If a bed is available, they can arrange for a transport directly to the treatment center. Unfortunately, beds are rarely available, and staff instead often refer clients to the treatment center for them to join the wait list. JRRP has a contract with a taxi company that began in February 2023 and can facilitate transportation directly to domestic violence shelters, detox shelters or facilities, and hospitals. Currently, transportation cannot be provided to other locations.
+
+For other services, JRRP operates as a referral center. For example, staff can provide clients with information about housing assistance or shelters, but they do not have the ability to get clients directly into housing. JRRP is limited by the shortage of social services that exist more broadly in Salt Lake County.
+
+
+```{r}
+
+# JRRP Referrals
+r <- jrrp %>% 
+  # Pivot from wide to long
+  mutate(ref_courtinfo = court_info,
+         ref_supinfo = sup_info,
+         ref_jra = jra,
+         ref_medicaid = medicaid) %>% 
+  pivot_longer(cols = starts_with("ref_")) %>% 
+  mutate(referralName = case_when(
+        name == "ref_supinfo" ~ "Supervision Info",
+        name == "ref_courtinfo" ~ "Court Info",
+        name == "ref_jra" ~ "Jail Release Agreement Info",
+        name == "ref_medicaid" ~ "Medicaid Referral",
+        name == "ref_health" ~ "Healthcare",
+        name == "ref_abuse" ~ "Abuse and Domestic Violence",
+        name == "ref_transport" ~ "Transportation",
+        name == "ref_employ" ~ "Employment",
+        name == "ref_legal" ~ "Legal Information",
+        name == "ref_food" ~ "Food Vouchers",
+        name == "ref_mhsu" ~ "Mental Health and Substance Use",
+        name == "ref_house" ~ "Housing",
+        name == "ref_educ" ~ "Education",
+        name == "ref_specpop" ~ "Specific Population Referrals",
+        name == "ref_other" ~ "Other Needs"
+  )) %>% 
+  group_by(referralName) %>%
+  summarise(total = sum(value)) %>%
+  # Sort referrals by largest to smallest and format numbers
+  mutate(referralName = reorder(factor(referralName), total),
+         totallab = format(total, big.mark = ","))
+
+
+# Plot referrals and services
+plot_ly(r, x = ~total, y = ~referralName, marker = list(color="#1f77b4"), text = ~totallab) %>%
+  add_trace(type = "bar",
+            # Add tooltip. <extra></extra> removes the grouping from the tooltip
+            hovertemplate = paste0("<b>%{y}</b>",
+                                  "<br>Number of referrals: %{text}<extra></extra>"),
+            texttemplate = '%{text}', textposition = if_else(r$referralName=="Court Info", "inside", "outside")
+            ) %>%
+  layout(
+    title = "JRRP Referrals and Services",
+    xaxis = list(title = "Number of referrals"),
+    yaxis = list(title = ""),
+    margin = list(l = 100, r = 50, b = 100, t = 50, pad = 7)
+  )
+
+```
+*Note: All JRRP interactions are included.*
+
+
+
+### Participation Rates
+
+For jail releases occurring from May 1, 2022 to March 31, 2023 during JRRP operational hours, participation ranged from 23% to 40% among individuals eligible for JRRP. Eligibility was defined based on a release from jail for a qualifying release reason (meaning they walked through the JRRP room) during JRRP operational hours.
+
+```{r}
+# Subset data to qualifying releases and releases that occur during JRRP operational hours
+s <- m %>% 
+  filter(qualrel == "Yes" & relJRRPhrs == "Yes") %>% 
+  filter(RELDATE >= ymd('2022-05-01') & RELDATE < ymd ('2023-04-01')) %>% 
+  group_by(RELEASE_MONYR, jrrp) %>% 
+  summarise(cnt = n()) %>%
+  mutate(freq = (cnt / sum(cnt))) %>% 
+  # Only keep JRRP =YES to show participation rates
+  filter(jrrp=="Yes")
+
+# 100% Stacked bar chart 
+plot_ly(
+  data = s, x = ~RELEASE_MONYR, y = ~freq
+  ) %>% 
+  layout(barmode = 'stack',
+         title = "Percent of Released Individuals Who Receive JRRP Services",
+         yaxis = list(tickformat  = '0%', title = ""),
+         xaxis = list(title = ""),
+         legend = list(
+           title = list(text = "JRRP")
+         )) %>% 
+  add_trace(type = "bar",
+            colors = ~c("#1f77b4"),
+            # Add tooltip. <extra></extra> removes the grouping from the tooltip
+            hovertemplate = paste0("<b>%{x}</b>: %{y:.2%}",
+                                  "<extra></extra>"),
+            texttemplate = '%{y:.0%}', textposition = 'inside', textfont = list(color = "white"), insidetextanchor = "middle"
+            ) 
+
+```
+*Note: All JRRP interactions are included.*
+
+
+
+
+### Interactions Per Person
+
+
+```{r}
+# Create a person-level dataset that shows total number of releases and total JRRP stops per person
+
+prs <-  m %>% 
+  # Only look at bookings after 5/1/22, when JRRP opened with more regular hours. May through March (11 months)
+  filter(RELDATE >= ymd('2022-05-01') & RELDATE < ymd ('2023-04-01'))
+
+# Count number of releases in the dataset for everyone and for JRRP stops
+numreleases <- format(nrow(prs), big.mark=",")
+numreleasesjrrp <- format(nrow(prs %>% filter(jrrp == "Yes")), big.mark=",")
+
+# Group by person
+prs <-  prs %>%
+  arrange(PCP, RELDATE) %>% 
+  mutate(number = 1) %>% 
+  group_by(PCP) %>%
+  # Was the JRRP Stop on their first booking in the time period?
+  # Which releases did they stop at JRRP?
+  mutate(relcounter = cumsum(number),
+         jrrp_firstbook = if_else(RELEASE_DATE == min(RELEASE_DATE) & jrrp == "Yes", 1, 0),
+         jrrp_1rel = if_else(jrrp == "Yes" & relcounter == 1, 1, 0),
+         jrrp_2rel = if_else(jrrp == "Yes" & relcounter == 2, 1, 0),
+         jrrp_3rel = if_else(jrrp == "Yes" & relcounter == 3, 1, 0),
+         jrrp_4mrrel = if_else(jrrp == "Yes" & relcounter >= 4, 1, 0)
+         ) %>% 
+  # Count the number of total bookings and number of JRRP Stops
+  summarize(bookings = n(),
+            jrrpstops = sum(jrrp == "Yes"),
+            jrrp_firstbook = sum(jrrp_firstbook),
+            jrrp_1rel = sum(jrrp_1rel),
+            jrrp_2rel = sum(jrrp_2rel),
+            jrrp_3rel = sum(jrrp_3rel),
+            jrrp_4mrrel = sum(jrrp_4mrrel)
+  ) %>% 
+  # Change the variables to only show the first release when the person stopped at JRRP
+  mutate(jrrp_2rel = if_else(jrrp_2rel==1 & jrrp_1rel==1, 0, jrrp_2rel),
+         jrrp_3rel = if_else(jrrp_3rel==1 & (jrrp_1rel==1 | jrrp_2rel==1), 0, jrrp_3rel),
+         # This variable can be higher than 1. Turn it into a 0/1 count
+         jrrp_4mrrel = if_else(jrrp_4mrrel==0, 0, 1),
+         jrrp_4mrrel = if_else(jrrp_4mrrel==1 & (jrrp_1rel==1 | jrrp_2rel==1 | jrrp_3rel==1), 0, jrrp_4mrrel)
+         ) %>% 
+  # New variable that shows the percentage of the bookings with a JRRP stop
+  mutate(jrrp_perc = jrrpstops / bookings * 100,
+         anyjrrp = factor(if_else(jrrpstops > 0, "Yes", "No"))
+  )
+
+# Count number of unique people (JRRP + nonJRRP)
+numppl <- format(nrow(prs), big.mark=",")
+
+# Count number of unique JRRP participants
+numppljrrp <- format(nrow(prs %>% filter(anyjrrp=="Yes")), big.mark=",")
+
+```
+
+
+
+
+
+
+```{r}
+# Releases per person
+g <- prs %>% 
+  filter(anyjrrp=="Yes") %>% 
+  # Create 10+ category
+  mutate(bookings = if_else(bookings >=10, "10+", as.character(bookings)),
+         bookings = factor(bookings, levels=c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10+"))) %>% 
+  group_by(bookings) %>% 
+  summarise(cnt = n())
+
+sub <- g %>% filter(bookings==1)
+sub <- sub$cnt
+perc = round(sub/sum(g$cnt) * 100, 2)
+
+
+```
+
+
+In the time period from May 1, 2022 to March 31, 2023, JRRP had `r numreleasesjrrp` interactions with `r numppljrrp` unique individuals. For people who used JRRP at least once, just over half (`r perc`%) had only one jail release in the time period. This means that around half of unique individuals who utilized JRRP had multiple jail releases in the time period.
+
+
+```{r}
+
+# Bar chart
+plot_ly(data = g, x = ~bookings, y = ~cnt, marker = list(color="#1f77b4")) %>% 
+  add_trace(type = "bar",
+            texttemplate = '%{y}', textposition = 'outside', showlegend = FALSE
+            ) %>% 
+  layout(title = "Number of Jail Releases Per Person for Individuals Who Utilized JRRP",
+         yaxis = list(tickformat=',d', 
+                      title = "Number of People"),
+         xaxis = list(title = "Number of Jail Releases Per Person",
+                      tickmode="linear",
+                      dtick=1)
+         ) 
+```
+
+```{r}
+
+# JRRP Stops per person
+s <- prs %>% 
+  filter(anyjrrp=="Yes") %>% 
+  group_by(jrrpstops) %>% 
+  summarise(cnt = n())
+
+# Percent of people with more than 1 JRRP interaction
+sub <- s %>% filter(jrrpstops==1)
+sub <- sub$cnt
+perc = round(sub/sum(s$cnt) * 100, 2)
+perc2 = 100-perc
+
+unqppl = format(sum(s$cnt), big.mark = ",")
+sub = format(sub, big.mark = ",")
+
+```
+
+Of the `r unqppl` unique individuals who utilized JRRP from May 1, 2022 to March 31, 2023, the majority (`r sub`, `r perc`%) used JRRP only once. A small percentage of JRRP participants (`r perc2`%) who utilized JRRP stopped at JRRP multiple times on different releases. 
+
+
+
+```{r}
+# Bar chart of which release people stop at JRRP
+g <- prs %>% 
+  filter(anyjrrp == "Yes") %>% 
+  select(PCP, jrrp_1rel, jrrp_2rel, jrrp_3rel, jrrp_4mrrel) %>% 
+  pivot_longer(cols = c("jrrp_1rel", "jrrp_2rel", "jrrp_3rel", "jrrp_4mrrel")) %>% 
+  mutate(lab = factor(case_when(
+    name == "jrrp_1rel" ~ "First release",
+    name == "jrrp_2rel" ~ "Second release",
+    name == "jrrp_3rel" ~ "Third release",
+    name == "jrrp_4mrrel" ~ "Fourth or more release",
+  ), levels = c("First release", "Second release", "Third release", "Fourth or more release"))
+  ) %>% 
+  group_by(lab) %>% 
+  summarise(cnt = sum(value)) %>% 
+  mutate(perc = paste0(round(cnt / sum(cnt)* 100, 2), "%"))
+            
+first <-  g %>% filter(lab == "First release")
+first <- first$perc
+
+
+```
+
+Of individuals who utilized JRRP services, `r first` of people stopped at JRRP on their first jail release in the time period. Because this encompasses the majority of releases, only the first release in the time period is used in future analysis, unless otherwise specified that all releases are included. This ensures that individuals have one record in the data, rather than giving more weight to individuals with multiple releases in the time period.
+
+
+
+```{r}
+
+# Plot the Release that people first stopped at JRRP
+plot_ly(data = g, x = ~lab, y = ~cnt, text = ~perc, marker = list(color="#1f77b4")) %>% 
+  add_trace(type = "bar",
+            texttemplate = '%{y}', textposition = 'outside', 
+            # Add tooltip. <extra></extra> removes the grouping from the tooltip
+            hovertemplate = paste0("<b>First JRRP stop occured on the %{x}</b> :",
+                                  "<br>%{y} (%{text})", "<extra></extra>"),
+            showlegend = FALSE) %>% 
+  layout(title = "Release that Individuals First Stopped at JRRP",
+         yaxis = list(tickformat=',d', title = ""),
+         xaxis = list(title = "Release")
+         ) 
+
+```
+
+
+
+
+### Participant Comparison
+
+Demographic characteristics and criminal justice involvement data was compared for those who utilized JRRP as compared to those who did not. The following data includes only individuals' first jail release in the time period from May 1, 2022 to March 31, 2023. Data is subset to releases with a "qualifying" release type, which includes release types where individuals walk through the JRRP room upon release. Data is subset to releases that occur during JRRP operational hours.
+
+```{r}
+
+# Subset data to qualifying releases and releases that occur during JRRP operational hours
+# And ONLY FIRST RELEASE in the time period
+s <- m %>% 
+  filter(qualrel == "Yes" & relJRRPhrs == "Yes") %>% 
+  filter(RELDATE >= ymd('2022-05-01') & RELDATE < ymd ('2023-04-01')) %>% 
+  group_by(PCP) %>% 
+  mutate(firstrec = ifelse(RELDATE == min(RELDATE), 1, 0)
+         ) %>% 
+  ungroup() %>% 
+  filter(firstrec == 1) %>% 
+  mutate(RELEASE_MONYR = droplevels(RELEASE_MONYR))
+
+
+
+tab <- data.frame(unclass(table(s$RELEASE_MONYR, s$jrrp)))
+tab$monyr <- row.names(tab)
+
+totNo <- format(sum(tab$No), big.mark=",")
+totYes <- format(sum(tab$Yes), big.mark=",")
+
+tab <- tab %>% 
+  rowwise() %>% 
+  mutate(tot = No + Yes,
+         percNo = round(No/tot*100, 2),
+         percYes = round(Yes/tot*100, 2),
+         labNo = paste0(No, " (", percNo, "%)"),
+         labYes = paste0(Yes, " (", percYes, "%)")
+         ) %>% 
+  select(monyr, labNo, labYes)
+
+```
+
+The sample includes records for `r totYes` individuals who participated in JRRP and `r totNo` who did not from May 2022 to March 2023. The percent of all individuals who participated in JRRP ranged from 22.44% in September 2022 to 39.92% in March 2023.
+
+```{r}
+# Print table
+
+kable(x = tab
+      , col.names = c("Month/Year", "No JRRP Interaction", "JRRP Interaction")
+      , caption = "Releases by Month and by JRRP Status, Subset to First Qualifying Releases During JRRP Operational Hours"
+      ) %>% 
+  kable_paper() %>% 
+  kable_styling(font_size = 14) %>%
+  gsub("font-size: initial !important;", "font-size: 14pt !important;", .) %>% 
+  kable_styling(bootstrap_options = c("condensed"))
+
+
+```
+*Note: Data is subset to individuals' first JRRP encounter.*
+
+
+
+Characteristics were compared between JRRP participants and non-JRRP participants, analyzing only individuals’ first record in the time period. JRRP participation varied by participant sex, race/ethnicity, and age, with participation appearing to be more common for females, Hispanic individuals, and individuals in the 18-26 age group. 
+
+Significant differences did not exist between the severity of charges as measured by degree, for both the maximum degree for the booking and the degree associated with the law enforcement encounter reason. Differences in days in jail and booking reason were both statistically significant. JRRP participants were less likely to have spent less than 24 hours in jail and more likely to have spent over 19 days in jail. JRRP participants were more likely to have been booked on a new charge as compared to non-JRRP participants and less likely to have been booked on warrant services.
+
+Significant differences existed by release reason, but when release reasons were categorized into two groupings of release to own recognizance and release to supervision, no significant differences existed between these two broader groups. Significant differences existed between the two groups for crime type. JRRP participants were more likely to have a crime type of person and less likely to have a crime type of drugs or DUI.
+
+A large difference existed between past criminal justice involvement, as measured by previous bookings. JRRP participants were 9% more likely to have had no previous bookings in the Salt Lake County Metro Jail. Bookings in other facilities are not known.
+
+
+{.tabset .tabset-fade data-height=500}
+-------
+
+### Sex
+```{r}
+# Group by sex
+g <- s %>% 
+  group_by(jrrp, SEX) %>% 
+  summarise(cnt = n()) %>%
+  mutate(freq = percent(cnt / sum(cnt)))
+
+
+# Grouped bar chart
+plot_ly(
+  data = g, x = ~SEX, y = ~freq, color = ~jrrp, meta = ~jrrp) %>% 
+  add_trace(type = "bar", barmode = 'group',
+            colors = ~c("indianred4", "#1f77b4"),
+            texttemplate = '%{y:.1%}', textposition = 'outside',
+            # Add tooltip. <extra></extra> removes the grouping from the tooltip
+            hovertemplate = paste0("%{x}, JRRP = %{meta}: ",
+                                  "<br>%{y:.2%}",
+                                  "<extra></extra>")) %>% 
+  layout(yaxis = list(tickformat  = '0%', title = ""),
+         xaxis = list(title = "Sex"),
+         legend = list(
+           title = list(text = "JRRP")
+         )) 
+
+# Chi-squared test
+t <-  table(s$jrrp, s$SEX)
+chi <- chisq.test(t)
+x2 <-  round(as.numeric(chi[1]), 2)
+df <-  round(as.numeric(chi[2]), 2)
+pval <-  if_else(as.numeric(chi[3]) < 0.01, "<.01", substring(round(as.numeric(chi[3]), 2), 2))
+n <- format(sum(t), big.mark = ",")
+sig <-  if_else(as.numeric(chi[3]) <= 0.05, "was", "was not")
+
+
+
+```
+A chi-square test of independence was performed to determine whether the proportion of individuals by sex differed by JRRP status. The relation between these variables `r sig` significant, X<sup>2</sup> (`r df`, N = `r n`) = `r x2`, p = `r pval`. 
+
+### Race/Ethnicity
+```{r}
+g <- s %>% 
+  group_by(jrrp, raceethn) %>% 
+  summarise(cnt = n()) %>%
+  mutate(freq = formattable::percent(cnt / sum(cnt)))
+
+# Grouped bar chart
+plot_ly(
+  data = g,  x = ~raceethn, y = ~freq, color = ~jrrp, meta = ~jrrp
+  ) %>% 
+  add_trace(type = "bar",
+            barmode = 'group',
+            colors = ~c("indianred4", "#1f77b4"),
+            texttemplate = '%{y:.1%}', textposition = 'outside',
+            # Add tooltip. <extra></extra> removes the grouping from the tooltip
+            hovertemplate = paste0("%{x}, JRRP = %{meta}: ",
+                                  "<br>%{y:.2%}",
+                                  "<extra></extra>")) %>% 
+  layout(yaxis = list(tickformat  = '0%', title = ""),
+         xaxis = list(title = "Race"),
+         legend = list(
+           title = list(text = "JRRP")
+         )) 
+
+# Chi-squared test
+t <-  table(s$jrrp, s$raceethn)
+chi <- chisq.test(t)
+x2 <-  round(as.numeric(chi[1]), 2)
+df <-  round(as.numeric(chi[2]), 2)
+pval <- if_else(as.numeric(chi[3]) < 0.01, "<.01", substring(round(as.numeric(chi[3]), 2), 2))
+n <- format(sum(t), big.mark = ",")
+sig <-  if_else(as.numeric(chi[3]) <= 0.05, "was", "was not")
+
+```
+
+Race and ethnicity were combined since 99% of those who identified as Hispanic also identified as White. 
+
+A chi-square test of independence was performed to determine whether the proportion of individuals by race and ethnicity differed by JRRP status. The relation between these variables `r sig` significant, X<sup>2</sup> (`r df`, N = `r n`) = `r x2`, p = `r pval`. 
+
+
+
+
+### Age
+```{r}
+g <- s %>% 
+  group_by(jrrp, ageBins) %>% 
+  summarise(cnt = n()) %>%
+  mutate(freq = formattable::percent(cnt / sum(cnt)))
+
+# Grouped bar chart
+plot_ly(
+  data = g, x = ~ageBins, y = ~freq, color = ~jrrp, meta = ~jrrp) %>% 
+  add_trace(type = "bar",
+            barmode = 'group',
+            colors = ~c("indianred4", "#1f77b4"),
+            texttemplate = '%{y:.1%}', textposition = 'outside',
+            # Add tooltip. <extra></extra> removes the grouping from the tooltip
+            hovertemplate = paste0("Ages %{x}, JRRP = %{meta}: ",
+                                  "<br>%{y:.2%}",
+                                  "<extra></extra>")) %>% 
+  layout(yaxis = list(tickformat  = '0%', title = ""),
+         xaxis = list(title = "Age"),
+         legend = list(
+           title = list(text = "JRRP")
+         )) 
+
+# Chi-squared test
+t <-  table(s$jrrp, s$ageBins)
+chi <- chisq.test(t)
+x2 <-  round(as.numeric(chi[1]), 2)
+df <-  round(as.numeric(chi[2]), 2)
+pval <- if_else(as.numeric(chi[3]) < 0.01, "<.01", substring(round(as.numeric(chi[3]), 2), 2))
+n <- format(sum(t), big.mark = ",")
+sig <-  if_else(as.numeric(chi[3]) <= 0.05, "was", "was not")
+
+```
+
+The bins shown for the age groupings were determined using quintiles.
+
+A chi-square test of independence was performed to determine whether the proportion of individuals by age differed by JRRP status. The relation between these variables `r sig` significant, X<sup>2</sup> (`r df`, N = `r n`) = `r x2`, p = `r pval`. 
+
+
+
+### Degree (Max)
+```{r}
+
+### SEVERITY
+
+# Group by severity
+g <- s %>% 
+  group_by(jrrp, MAXDEGREE) %>% 
+  # New variables for counts and frequency within the JRRP group
+  summarise(cnt = n()) %>%
+  mutate(freq = formattable::percent(cnt / sum(cnt))) %>% 
+  # Take out white spaces 
+  mutate(MAXDEGREE = str_trim(MAXDEGREE)) %>% 
+  filter(MAXDEGREE %in% c("F1", "F2", "F3", "MA", "MB", "MC"))
+
+# Grouped bar chart
+plot_ly(
+  data = g,  x = ~MAXDEGREE,  y = ~freq, color = ~jrrp, meta = ~jrrp
+) %>% 
+  add_trace(type = "bar",
+            barmode = 'group',
+            colors = ~c("indianred4", "#1f77b4"),
+            texttemplate = '%{y:.1%}', textposition = 'outside',
+            # Add tooltip. <extra></extra> removes the grouping from the tooltip
+            hovertemplate = paste0("%{x}, JRRP = %{meta}: ",
+                                  "<br>%{y:.2%}",
+                                  "<extra></extra>")) %>% 
+  layout(yaxis = list(tickformat  = '0%', title = ""),
+         xaxis = list(title = "Max Degree of the Booking"),
+         legend = list(
+           title = list(text = "JRRP")
+         )) 
+
+# Chi-squared test
+t <-  table(s$jrrp, s$MAXDEGREE)
+chi <- chisq.test(t)
+x2 <-  round(as.numeric(chi[1]), 2)
+df <-  round(as.numeric(chi[2]), 2)
+pval <- if_else(as.numeric(chi[3]) < 0.01, "<.01", substring(round(as.numeric(chi[3]), 2), 2))
+n <- format(sum(t), big.mark = ",")
+sig <-  if_else(as.numeric(chi[3]) <= 0.05, "was", "was not")
+
+
+```
+
+The maximum degree by booking refers to the maximum degree of all charges associated with the booking. For example, an individual may be arrested and booked for a minor charge. Previous, open charges will appear on the individual's booking record as warrant charges, along with charges that may be filed in the subsequent days after booking and before release. This measure shows the highest charge associated with the booking, regardless of whether it was the reason for the arrest and booking.
+
+A chi-square test of independence was performed to determine whether the proportion of individuals by maximum degree differed by JRRP status. The relation between these variables `r sig` significant, X<sup>2</sup> (`r df`, N = `r n`) = `r x2`, p = `r pval`. 
+
+
+
+### Degree (Law Enforcement Encounter)
+```{r}
+
+### SEVERITY
+
+# Group by severity
+g <- s %>% 
+  group_by(jrrp, CHGDEGREE) %>% 
+  # New variables for counts and frequency within the JRRP group
+  summarise(cnt = n()) %>%
+  mutate(freq = formattable::percent(cnt / sum(cnt))) %>% 
+  # Take out white spaces 
+  mutate(CHGDEGREE = str_trim(CHGDEGREE)) %>% 
+  filter(CHGDEGREE %in% c("F1", "F2", "F3", "MA", "MB", "MC"))
+
+# Grouped bar chart
+plot_ly(data = g, x = ~CHGDEGREE, y = ~freq, color = ~jrrp, meta = ~jrrp) %>% 
+  add_trace(type = "bar",
+            barmode = 'group',
+            colors = ~c("indianred4", "#1f77b4"),
+            texttemplate = '%{y:.1%}', textposition = 'outside', 
+            # Add tooltip. <extra></extra> removes the grouping from the tooltip
+            hovertemplate = paste0("%{x}, JRRP = %{meta}: ",
+                                  "<br>%{y:.2%}",
+                                  "<extra></extra>")) %>% 
+  layout(yaxis = list(tickformat  = '0%', title = ""),
+         xaxis = list(title = "Degree Associated with the Law Enforcement Encounter Reason"),
+         legend = list(
+           title = list(text = "JRRP")
+         )) 
+  
+
+# Chi-squared test
+t <-  table(s$jrrp, s$CHGDEGREE)
+chi <- chisq.test(t)
+x2 <-  round(as.numeric(chi[1]), 2)
+df <-  round(as.numeric(chi[2]), 2)
+pval <- if_else(as.numeric(chi[3]) < 0.01, "<.01", substring(round(as.numeric(chi[3]), 2), 2))
+n <- format(sum(t), big.mark = ",")
+sig <-  if_else(as.numeric(chi[3]) <= 0.05, "was", "was not")
+
+
+```
+
+The degree associated with the law enforcement encounter reason refers to the highest degree of the first case for this booking. This generally is the charge associated with why an individual was stopped by law enforcement and/or arrested and booked. For example, an individual may be arrested and booked for a minor charge. Previous, open charges will appear on the individual's booking record as warrant charges, along with charges that may be filed in the subsequent days after booking and before release. This measure shows the highest charge associated with first case for the booking, which is usually the reason for the law enforcement encounter, regardless of whether the individual has higher charges from previous open warrants or higher charges are filed at a later time during the booking. This measure indicates the degree of the crime that led to the law enforcement encounter, not the degree of the crime associated with how long an individual remains in jail.
+
+A chi-square test of independence was performed to determine whether the proportion of individuals by booking reason degree differed by JRRP status. The relation between these variables `r sig` significant, X<sup>2</sup> (`r df`, N = `r n`) = `r x2`, p = `r pval`.
+
+
+
+### Days in Jail
+```{r}
+g <- s %>% 
+  group_by(jrrp, daysinjail_bins) %>% 
+  summarise(cnt = n()) %>%
+  mutate(freq = formattable::percent(cnt / sum(cnt)))
+
+# Grouped bar chart
+plot_ly(data = g, x = ~daysinjail_bins, y = ~freq, color = ~jrrp, meta = ~jrrp) %>% 
+  add_trace(type = "bar",
+            barmode = 'group',
+            colors = ~c("indianred4", "#1f77b4"),
+            texttemplate = '%{y:.1%}', textposition = 'outside',
+            # Add tooltip. <extra></extra> removes the grouping from the tooltip
+            hovertemplate = paste0("%{x} days in jail, <br>JRRP = %{meta}: ",
+                                  "<br>%{y:.2%}",
+                                  "<extra></extra>")) %>% 
+  layout(yaxis = list(tickformat  = '0%', title = ""),
+         xaxis = list(title = "Days In Jail"),
+         legend = list(
+           title = list(text = "JRRP")
+         )) 
+
+# Chi-squared test
+t <-  table(s$jrrp, s$daysinjail_bins)
+chi <- chisq.test(t)
+x2 <-  round(as.numeric(chi[1]), 2)
+df <-  round(as.numeric(chi[2]), 2)
+pval <- if_else(as.numeric(chi[3]) < 0.01, "<.01", substring(round(as.numeric(chi[3]), 2), 2))
+n <- format(sum(t), big.mark = ",")
+sig <-  if_else(as.numeric(chi[3]) <= 0.05, "was", "was not")
+
+```
+
+The bins shown for the days in jail groupings were determined using deciles.
+
+A chi-square test of independence was performed to determine whether the proportion of individuals by days in jail differed by JRRP status. The relation between these variables `r sig` significant, X<sup>2</sup> (`r df`, N = `r n`) = `r x2`, p = `r pval`.
+
+
+### Booking Reason
+```{r}
+# Reason for booking
+
+# Drop unused factor levels. Having factor levels with 0 values will cause an error in the chi-squared test
+s <- s %>% 
+  mutate(ADM_TYPE_DESC = droplevels(ADM_TYPE_DESC))
+
+g <- s %>% 
+  group_by(jrrp, ADM_TYPE_DESC) %>% 
+  summarise(cnt = n()) %>%
+  mutate(freq = formattable::percent(cnt / sum(cnt)))
+
+# Grouped bar chart
+plot_ly(data = g, x = ~ADM_TYPE_DESC, y = ~freq, color = ~jrrp, meta = ~jrrp) %>% 
+  add_trace(type = "bar",
+            barmode = 'group',
+            colors = ~c("indianred4", "#1f77b4"),
+            texttemplate = '%{y:.1%}', textposition = 'outside',
+            # Add tooltip. <extra></extra> removes the grouping from the tooltip
+            hovertemplate = paste0("%{x}, JRRP = %{meta}: ",
+                                  "<br>%{y:.2%}",
+                                  "<extra></extra>")) %>% 
+  layout(yaxis = list(tickformat  = '0%', title = ""),
+         xaxis = list(title = "Reason for Booking"),
+         legend = list(
+           title = list(text = "JRRP")
+         )) 
+
+# Chi-squared test
+t <-  table(s$jrrp, s$ADM_TYPE_DESC)
+chi <- chisq.test(t)
+x2 <-  round(as.numeric(chi[1]), 2)
+df <-  round(as.numeric(chi[2]), 2)
+pval <- if_else(as.numeric(chi[3]) < 0.01, "<.01", substring(round(as.numeric(chi[3]), 2), 2))
+n <- format(sum(t), big.mark = ",")
+sig <-  if_else(as.numeric(chi[3]) <= 0.05, "was", "was not")
+
+```
+A chi-square test of independence was performed to determine whether the proportion of individuals by booking reason differed by JRRP status. The relation between these variables `r sig` significant, X<sup>2</sup> (`r df`, N = `r n`) = `r x2`, p `r pval`.
+
+
+
+### Release Reason
+```{r}
+# Reason for release
+g <- s %>% 
+  group_by(jrrp, REL_DESC) %>% 
+  summarise(cnt = n()) %>%
+  mutate(freq = formattable::percent(cnt / sum(cnt)),
+         REL_DESC = if_else(REL_DESC == "UNSECURED BOND", "XXX - UNSECURED BOND", REL_DESC))%>% 
+  separate_wider_delim(REL_DESC, delim = " - ", names = c("first", "second")) %>% 
+  mutate(second = str_to_sentence(second))
+
+# Grouped bar chart
+plot_ly(data = g, x = ~second, y = ~freq, color = ~jrrp, meta = ~jrrp) %>% 
+  add_trace(type = "bar",
+            barmode = 'group',
+            colors = ~c("indianred4", "#1f77b4"),
+            texttemplate = '%{y:.1%}', textposition = 'outside',
+            # Add tooltip. <extra></extra> removes the grouping from the tooltip
+            hovertemplate = paste0("%{x}, JRRP = %{meta}: ",
+                                  "<br>%{y:.2%}",
+                                  "<extra></extra>")) %>% 
+  layout(yaxis = list(tickformat  = '0%', title = ""),
+         xaxis = list(title = "Reason for Release"
+                      #, tickangle = -90 
+                      ),
+         legend = list(
+           title = list(text = "JRRP")
+         ))
+
+
+# Chi-squared test
+t <-  table(s$jrrp, s$REL_DESC)
+chi <- chisq.test(t)
+x2 <-  round(as.numeric(chi[1]), 2)
+df <-  round(as.numeric(chi[2]), 2)
+pval <- if_else(as.numeric(chi[3]) < 0.01, "<.01", substring(round(as.numeric(chi[3]), 2), 2))
+n <- format(sum(t), big.mark = ",")
+sig <-  if_else(as.numeric(chi[3]) <= 0.05, "was", "was not")
+
+```
+A chi-square test of independence was performed to determine whether the proportion of individuals by release reason differed by JRRP status. The relation between these variables `r sig` significant, X<sup>2</sup> (`r df`, N = `r n`) = `r x2`, p `r pval`.
+
+
+
+
+### Release Reason Category
+```{r}
+# Reason for release
+g <- s %>% 
+  group_by(jrrp, reltype_bins) %>% 
+  summarise(cnt = n()) %>%
+  mutate(freq = formattable::percent(cnt / sum(cnt)))
+         
+
+# Grouped bar chart
+plot_ly(data = g, x = ~reltype_bins, y = ~freq, color = ~jrrp, meta = ~jrrp) %>% 
+  add_trace(type = "bar",
+            barmode = 'group',
+            colors = ~c("indianred4", "#1f77b4"),
+            texttemplate = '%{y:.1%}', textposition = 'outside',
+            # Add tooltip. <extra></extra> removes the grouping from the tooltip
+            hovertemplate = paste0("%{x}, JRRP = %{meta}: ",
+                                  "<br>%{y:.2%}",
+                                  "<extra></extra>")) %>% 
+  layout(yaxis = list(tickformat  = '0%', title = ""),
+         xaxis = list(title = "Reason for Release"),
+         legend = list(
+           title = list(text = "JRRP")
+         ))
+
+
+# Chi-squared test
+s <- s %>% 
+  mutate(reltype_bins = factor(reltype_bins))
+
+t <-  table(s$jrrp, s$reltype_bins)
+chi <- chisq.test(t)
+x2 <-  round(as.numeric(chi[1]), 2)
+df <-  round(as.numeric(chi[2]), 2)
+pval <- if_else(as.numeric(chi[3]) < 0.01, "<.01", substring(round(as.numeric(chi[3]), 2), 2))
+n <- format(sum(t), big.mark = ",")
+sig <-  if_else(as.numeric(chi[3]) <= 0.05, "was", "was not")
+
+```
+A chi-square test of independence was performed to determine whether the proportion of individuals by release reason differed by JRRP status. The relation between these variables `r sig` significant, X<sup>2</sup> (`r df`, N = `r n`) = `r x2`, p `r pval`.
+
+
+
+
+
+### Crime Type (reason for booking)
+```{r}
+
+# Crime Type
+g <- s %>% 
+  group_by(jrrp, CRIME_TYPE) %>% 
+  summarise(cnt = n()) %>%
+  mutate(freq = formattable::percent(cnt / sum(cnt)))
+
+
+# Grouped bar chart
+plot_ly(data = g, x = ~CRIME_TYPE, y = ~freq, color = ~jrrp, meta = ~jrrp) %>% 
+  add_trace(type = "bar",
+            barmode = 'group',
+            colors = ~c("indianred4", "#1f77b4"),
+            texttemplate = '%{y:.1%}', textposition = 'outside',
+            # Add tooltip. <extra></extra> removes the grouping from the tooltip
+            hovertemplate = paste0("Crime type %{x}, JRRP = %{meta}: ",
+                                  "<br>%{y:.2%}",
+                                  "<extra></extra>")) %>% 
+  layout(yaxis = list(tickformat  = '0%', title = ""),
+         xaxis = list(title = "Crime Type"),
+         legend = list(
+           title = list(text = "JRRP")
+         ))
+
+
+# Chi-squared test
+t <-  table(s$jrrp, s$CRIME_TYPE)
+chi <- chisq.test(t)
+x2 <-  round(as.numeric(chi[1]), 2)
+df <-  round(as.numeric(chi[2]), 2)
+pval <- if_else(as.numeric(chi[3]) < 0.01, "<.01", substring(round(as.numeric(chi[3]), 2), 2))
+n <- format(sum(t), big.mark = ",")
+sig <-  if_else(as.numeric(chi[3]) <= 0.05, "was", "was not")
+
+```
+
+A chi-square test of independence was performed to determine whether the proportion of individuals by crime type differed by JRRP status. The relation between these variables `r sig` significant, X<sup>2</sup> (`r df`, N = `r n`) = `r x2`, p = `r pval`.
+
+
+### Previous Bookings
+```{r}
+
+# Crime Type
+g <- s %>% 
+  group_by(jrrp, prevBookingsbins) %>% 
+  summarise(cnt = n()) %>%
+  mutate(freq = formattable::percent(cnt / sum(cnt)))
+
+
+# Grouped bar chart
+plot_ly(data = g, x = ~prevBookingsbins, y = ~freq, color = ~jrrp, meta = ~jrrp) %>% 
+  add_trace(type = "bar",
+            barmode = 'group',
+            colors = ~c("indianred4", "#1f77b4"),
+            texttemplate = '%{y:.1%}', textposition = 'outside',
+            # Add tooltip. <extra></extra> removes the grouping from the tooltip
+            hovertemplate = paste0("%{x} previous bookings, JRRP = %{meta}: ",
+                                  "<br>%{y:.2%}",
+                                  "<extra></extra>")) %>% 
+  layout(yaxis = list(tickformat  = '0%', title = ""),
+         xaxis = list(title = "Number of Previous Bookings"),
+         legend = list(
+           title = list(text = "JRRP")
+         ))
+
+
+# Chi-squared test
+t <-  table(s$jrrp, s$prevBookingsbins)
+chi <- chisq.test(t)
+x2 <-  round(as.numeric(chi[1]), 2)
+df <-  round(as.numeric(chi[2]), 2)
+pval <- if_else(as.numeric(chi[3]) < 0.01, "<.01", substring(round(as.numeric(chi[3]), 2), 2))
+n <- format(sum(t), big.mark = ",")
+sig <-  if_else(as.numeric(chi[3]) <= 0.05, "was", "was not")
+
+```
+
+The bins shown for the previous bookings groupings were determined using quintiles.
+
+A chi-square test of independence was performed to determine whether the proportion of individuals by previous bookings differed by JRRP status. The relation between these variables `r sig` significant, X<sup>2</sup> (`r df`, N = `r n`) = `r x2`, p = `r pval`.
+
+## Re-booking Rates 
+
+### Unadjusted {.tabset .tabset-fade data-height=500}
+
+Unadjusted re-booking rates were examined for 30 days, 60 days, 90 days, and 6 months, further broken down by any cause, new charges, and warrants. The re-booking reason (new charge vs. warrant) is connected to the charge associated with the booking reason. This may underestimate warrant bookings if the law enforcement encounter was triggered by a new charge but a previous warrant contributed to the booking. For all measures, rates are compared between releases that did and did not receive JRRP services, subset to qualifying releases and releases that occurred during JRRP operational hours.
+
+Data includes releases from May 1, 2022 to March 31, 2023. For each re-booking rate, releases are excluded from the number of days before the end date so as to include the full follow-up period. For example, for the 30-day re-rebooking measures, records include releases that occurred 30 days before March 31, 2023, so that all records have a full 30-day follow up period. This method is also utilized for the 60-day, 90-day, and 6 -month (182-day) time periods.
+
+Using only individuals' first booking in the time period, JRRP participants are overall more likely to be re-booked for any cause and for new charges but less likely to be re-booked for a warrant service.
+
+Re-booking rates for all causes were not significantly different by JRRP participation (with differences less than 1%). However, re-booking rates for new charges were significantly higher, with JRRP participants around 2.3% more likely to be re-booked within 60 and 90-days relative to non-JRRP participants.
+
+JRRP participants were less likely to be re-booked on warrant services for the 30-, 60- and 90-day rates, although none of these differences were statistically significant. 
+
+Trends in re-booking rates are similar when using a sample of all bookings in the time period. Differences are small for re-booking rates for all causes, JRRP participants are more likely to be re-booked for new charges and less likely to be re-booked for warrant services, with larger differences seen in the longer time period rates. 
+
+
+
+
+-------
+
+#### First Booking
+```{r}
+
+
+unadjdif <- function(df, var, daysbuffer, measurelab) {
+  
+  #Filter dataframe to records with the specified follow up period
+  a <- df %>% 
+    filter(RELDATE < ymd ('2023-04-01') - days(daysbuffer)) 
+  
+  # Group by JRRP groups and calculate the number of people with this rebooking measure
+  a <- a %>% 
+    group_by(jrrp) %>%
+    summarize(count = sum({{var}}),
+              n = n(),
+              perc = sum({{var}}) / n()
+             ) %>% 
+    pivot_wider(names_from =jrrp, values_from=c(count, n, perc))
+
+  
+  # 2-tailed t-test to test for differences in the proportions
+  successes <- as.numeric(a[1,1:2])
+  trials = as.numeric(a[1,3:4])
+  
+  p <- prop.test(successes,
+            trials, 
+            p = NULL, alternative = "two.sided", correct = TRUE)
+  
+  a <- a %>% 
+    mutate(pval = p$p.value,
+           stars = if_else(pval<0.05, "*", ""),
+           Measure = measurelab,
+           No = paste0(round(perc_No*100, 2), "%"),
+           Yes = paste0(round(perc_Yes*100, 2), "%"),
+           Difference = paste0(round((perc_Yes - perc_No)*100, 2), "%", stars),
+           n = format(n_No + n_Yes, big.mark=",")
+           ) %>% 
+   select(Measure, n, No, Yes, Difference, pval,)
+  
+  return(a)
+
+}
+
+
+## First Booking in the time period - use firstrec_jrrphr variable
+
+# Subset and replace missings for the rebooking variables
+r <- m %>% 
+  # Qualifying releases and JRRP Hours
+  filter(qualrel == "Yes" & relJRRPhrs == "Yes") %>% 
+  filter(RELDATE >= ymd('2022-05-01') & RELDATE < ymd ('2023-04-01')) %>% 
+  # FIRST RECORD
+  group_by(PCP) %>% 
+  mutate(firstrec = ifelse(RELDATE == min(RELDATE), 1, 0)
+         ) %>% 
+  ungroup() %>% 
+  filter(firstrec == 1) %>% 
+  # Replace missing= rebooking variables with FALSE
+  mutate(rebook30 = coalesce(rebook30, FALSE),
+         rebook60 = coalesce(rebook60, FALSE),
+         rebook90 = coalesce(rebook90, FALSE),
+         rebook182 = coalesce(rebook182, FALSE),
+         rebook30_nc = coalesce(rebook30_nc, FALSE),
+         rebook60_nc = coalesce(rebook60_nc, FALSE),
+         rebook90_nc = coalesce(rebook90_nc, FALSE),
+         rebook182_nc = coalesce(rebook182_nc, FALSE),
+         rebook30_w = coalesce(rebook30_w, FALSE),
+         rebook60_w = coalesce(rebook60_w, FALSE),
+         rebook90_w = coalesce(rebook90_w, FALSE),
+         rebook182_w = coalesce(rebook182_w, FALSE)
+         )
+
+# Check missings
+# sapply(r, function(x) sum(is.na(x)))
+
+
+#### First Bookings
+
+# Any cause 
+a1 <- unadjdif(r, rebook30, 30, "&nbsp;    30-day")
+a2 <- unadjdif(r, rebook60, 60, "&nbsp;    60-day")
+a3 <- unadjdif(r, rebook90, 90, "&nbsp;    90-day")
+a4 <- unadjdif(r, rebook182, 182, "&nbsp;    6-month")
+
+# New charges
+b1 <- unadjdif(r, rebook30_nc, 30, "&nbsp;    30-day")
+b2 <- unadjdif(r, rebook60_nc, 60, "&nbsp;    60-day")
+b3 <- unadjdif(r, rebook90_nc, 90, "&nbsp;    90-day")
+b4 <- unadjdif(r, rebook182_nc, 182, "&nbsp;  6-month")
+
+# Warrants
+c1 <- unadjdif(r, rebook30_w, 30, "&nbsp;    30-day")
+c2 <- unadjdif(r, rebook60_w, 60, "&nbsp;    60-day")
+c3 <- unadjdif(r, rebook90_w, 90, "&nbsp;    90-day")
+c4 <- unadjdif(r, rebook182_w, 182, "&nbsp;    6-month")
+
+# Row headers
+atitle <- data.frame(Measure = "<b>Re-booking rate, any cause</b>", n = "", No = "", Yes = "", Difference = "")
+btitle <- data.frame(Measure = "<b>Re-booking rate, new charges</b>", n = "", No = "", Yes = "", Difference = "")
+ctitle <- data.frame(Measure = "<b>Re-booking rate, warrants</b>", n = "", No = "", Yes = "", Difference = "")
+
+
+rbk <- bind_rows(atitle, a1,a2,a3,a4,
+                 btitle, b1,b2,b3,b4,
+                 ctitle, c1,c2,c3,c4) %>% 
+  select(-pval)
+
+# Print table
+kable(x = rbk
+      #, col.names = c("Month/Year", "No JRRP Interaction", "JRRP Interaction")
+      , caption = "Rebooking Rates, First Release in the Time Period"
+      , escape = FALSE
+      ) %>% 
+  kable_paper() %>% 
+  kable_styling(font_size = 14) %>%
+  gsub("font-size: initial !important;", "font-size: 14pt !important;", .) %>% 
+  kable_styling(bootstrap_options = c("condensed"))
+
+```
+
+*Note: Stars next to the difference indicate statistical significance at the 0.05 level using a 2-tailed [Pearson's chi-squared test](https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/prop.test) of equal proportions.* 
+
+#### All Bookings
+
+```{r}
+
+
+## All Bookings
+
+# Subset and replace missings for the rebooking variables
+r <- m %>% 
+  # Qualifying releases and JRRP Hours
+  filter(qualrel == "Yes" & relJRRPhrs == "Yes") %>% 
+  filter(RELDATE >= ymd('2022-05-01') & RELDATE < ymd ('2023-04-01')) %>% 
+  # Replace missing= rebooking variables with FALSE
+  mutate(rebook30 = coalesce(rebook30, FALSE),
+         rebook60 = coalesce(rebook60, FALSE),
+         rebook90 = coalesce(rebook90, FALSE),
+         rebook182 = coalesce(rebook182, FALSE),
+         rebook30_nc = coalesce(rebook30_nc, FALSE),
+         rebook60_nc = coalesce(rebook60_nc, FALSE),
+         rebook90_nc = coalesce(rebook90_nc, FALSE),
+         rebook182_nc = coalesce(rebook182_nc, FALSE),
+         rebook30_w = coalesce(rebook30_w, FALSE),
+         rebook60_w = coalesce(rebook60_w, FALSE),
+         rebook90_w = coalesce(rebook90_w, FALSE),
+         rebook182_w = coalesce(rebook182_w, FALSE)
+         )
+
+# Check missings
+# sapply(r, function(x) sum(is.na(x)))
+
+
+#### First Bookings
+
+# Any cause 
+a1 <- unadjdif(r, rebook30, 30, "&nbsp;    30-day")
+a2 <- unadjdif(r, rebook60, 60, "&nbsp;    60-day")
+a3 <- unadjdif(r, rebook90, 90, "&nbsp;    90-day")
+a4 <- unadjdif(r, rebook182, 182, "&nbsp;    6-month")
+
+# New charges
+b1 <- unadjdif(r, rebook30_nc, 30, "&nbsp;    30-day")
+b2 <- unadjdif(r, rebook60_nc, 60, "&nbsp;    60-day")
+b3 <- unadjdif(r, rebook90_nc, 90, "&nbsp;    90-day")
+b4 <- unadjdif(r, rebook182_nc, 182, "&nbsp;  6-month")
+
+# Warrants
+c1 <- unadjdif(r, rebook30_w, 30, "&nbsp;    30-day")
+c2 <- unadjdif(r, rebook60_w, 60, "&nbsp;    60-day")
+c3 <- unadjdif(r, rebook90_w, 90, "&nbsp;    90-day")
+c4 <- unadjdif(r, rebook182_w, 182, "&nbsp;    6-month")
+
+# Row headers
+atitle <- data.frame(Measure = "<b>Re-booking rate, any cause</b>", n = "", No = "", Yes = "", Difference = "")
+btitle <- data.frame(Measure = "<b>Re-booking rate, new charges</b>", n = "", No = "", Yes = "", Difference = "")
+ctitle <- data.frame(Measure = "<b>Re-booking rate, warrants</b>", n = "", No = "", Yes = "", Difference = "")
+
+
+rbk <- bind_rows(atitle, a1,a2,a3,a4,
+                 btitle, b1,b2,b3,b4,
+                 ctitle, c1,c2,c3,c4) %>% 
+  select(-pval)
+
+# Print table
+kable(x = rbk
+      #, col.names = c("Month/Year", "No JRRP Interaction", "JRRP Interaction")
+      , caption = "Rebooking Rates, All Releases"
+      , escape = FALSE
+      ) %>% 
+  kable_paper() %>% 
+  kable_styling(font_size = 14) %>%
+  gsub("font-size: initial !important;", "font-size: 14pt !important;", .) %>% 
+  kable_styling(bootstrap_options = c("condensed"))
+
+```
+
+
+*Note: Stars next to the difference indicate statistical significance at the 0.05 level using a 2-tailed [Pearson's chi-squared test](https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/prop.test) of equal proportions.*
+
+
+### Adjusted
+
+Logistic regression was used to measure the effect of the JRRP intervention on the odds of re-booking measures. A logistic regression model was constructed, controlling for sex, race/ethnicity, age group, maximum degree of the booking, previous bookings, and month of release. As a sensitivity test, crime type was added into the model (results not shown). Results were very similar and the variable was excluded.
+
+Odds ratios are displayed along with 95% confidence intervals. An odds ratio of 1 indicates no difference in the odds of re-booking between JRRP and non-JRRP participants. Average marginal effects show the average percentage change in the probability of re-booking for JRRP participants as compared to non-JRRP participants. Positive average marginal effects mean that JRRP participants are more likely to be re-booked.
+
+Adjusted results show similar patterns as the unadjusted estimates. JRRP participants have a 6% to 14% higher odds of re-booking rate for any cause across the different time intervals as compared to non-JRRP participants, although none of the estimates are statistically significant. Results for re-booking rates related to new charges only show that the odds of re-booking at any of the time intervals was higher for JRRP relative to non-JRRP participants. The estimated difference was equal to between 1.3 to 2.8 percentage point increase in re-booking.
+
+The odds of re-booking due to warrant services decrease by up 11% for JRRP participants as compared to non-JRRP participants for the 30-, 60- and 90-day measures, but none of these estimates are significant.  The marginal effect is equivalent to a decreased probability of being re-booked of 0.4 to 1.2 percentage points. Because the confidence interval cross over 1, it cannot be concluded that the differences in rates are statistically significant at the 95% level.
+
+
+
+```{r}
+
+# Subset to just qualifying releases during JRRP hours and first record
+
+r <- m %>% 
+  # Qualifying releases and JRRP Hours
+  filter(qualrel == "Yes" & relJRRPhrs == "Yes") %>% 
+  filter(RELDATE >= ymd('2022-05-01') & RELDATE < ymd ('2023-04-01')) %>% 
+  # FIRST RECORD
+  group_by(PCP) %>% 
+  mutate(firstrec = ifelse(RELDATE == min(RELDATE), 1, 0)
+  ) %>% 
+  ungroup() %>% 
+  filter(firstrec == 1) %>% 
+  # Make sure variables are factors
+  mutate(
+    # jrrp = factor(jrrp,
+    #                    levels = c(0,1),
+    #                    labels = c("No JRRP", "JRRP")),
+    rebook30 = factor(as.numeric(rebook30),
+                      levels = c(0,1),
+                      labels = c("Not rebooked", "Rebooked")),
+    rebook60 = factor(as.numeric(rebook60),
+                      levels = c(0,1),
+                      labels = c("Not rebooked", "Rebooked")),
+    rebook90 = factor(as.numeric(rebook90),
+                      levels = c(0,1),
+                      labels = c("Not rebooked", "Rebooked")),
+    SEX = factor(SEX),
+    RACE = factor(RACE),
+    ETHNICITY = factor(ETHNICITY),
+    MAXDEGREE = factor(MAXDEGREE),
+    CHGDEGREE = factor(CHGDEGREE),
+    ADM_TYPE_DESC = factor(ADM_TYPE_DESC),
+    MY_NCIC_TYPE_MOD = factor(MY_NCIC_TYPE_MOD),
+    CRIME_TYPE = factor(CRIME_TYPE),
+    # Combine Federal detainee, homicide and kidnapping into one category since they're so smal
+    CRIME_TYPE_2 = if_else(CRIME_TYPE %in% c("Federal Detainee", "Homicide", "Kidnapping"), "Hom/Kidnapping/FedDet", CRIME_TYPE)
+  )  %>% 
+  # Filter out unknown race and sex
+  filter(RACE != "Unknown") %>% 
+  filter(SEX != "Unknown")
+
+
+
+
+
+
+# Turn into function
+logreg <- function(df, var, daysbuffer, measurelab){
+  
+  # Filter dataframe to records with the specified follow up period
+  a <- df %>%
+    filter(RELDATE < ymd ('2023-04-01') - days(daysbuffer)) %>% 
+    mutate(RELEASE_MONYR = factor(RELEASE_MONYR))
+
+  # Some trickery to use the var name in the model
+  colname <- colnames(df %>% select({{var}}))
+  modelvars <- paste0(colname, " ~ jrrp + SEX + raceethn + ageBins + MAXDEGREE + prevBookingsbins + RELEASE_MONYR") #CRIME_TYPE_2
+  
+  mod <- glm(modelvars, data = a, family = "binomial")
+
+  # Save log odds, p-value and odds ratio for the JRRP coefficient
+  logodds <- coef(summary(mod))[2,1]
+  se_logodds <- coef(summary(mod))[2,2]
+  pval_logodds <- coef(summary(mod))[2,4]
+  oddsratio <- exp(logodds)
+  CIL_odds <- exp(logodds - 1.96*se_logodds)
+  CIU_odds <- exp(logodds + 1.96*se_logodds)
+  CIodds <- paste0(round(oddsratio, 2), " [", round(CIL_odds,2), ", ", round(CIU_odds,2), "]")
+  
+  # Marginal effects
+  me <- margins(mod, variables = "jrrp")
+  
+  ame <- paste0(round(summary(me)[2] * 100, 2), "%")
+  CIL_ame <- paste0(round(summary(me)[6] * 100, 2), "%")
+  CIU_ame <- paste0(round(summary(me)[7] * 100, 2), "%")
+  CIame <- paste0(ame, " [", CIL_ame, ", ", CIU_ame, "]")
+
+
+  row <- data.frame(Measure = measurelab, 
+                   CIodds = CIodds,
+                   CIame = CIame
+  )
+  
+  return(row)
+  
+}
+
+
+
+#### First Bookings
+
+# Any cause 
+a1 <- logreg(r, rebook30, 30, "&nbsp;    30-day")
+a2 <- logreg(r, rebook60, 60, "&nbsp;    60-day")
+a3 <- logreg(r, rebook90, 90, "&nbsp;    90-day")
+a4 <- logreg(r, rebook182, 182, "&nbsp;    6-month")
+
+# New charges
+b1 <- logreg(r, rebook30_nc, 30, "&nbsp;    30-day")
+b2 <- logreg(r, rebook60_nc, 60, "&nbsp;    60-day")
+b3 <- logreg(r, rebook90_nc, 90, "&nbsp;    90-day")
+b4 <- logreg(r, rebook182_nc, 182, "&nbsp;  6-month")
+
+# Warrants
+c1 <- logreg(r, rebook30_w, 30, "&nbsp;    30-day")
+c2 <- logreg(r, rebook60_w, 60, "&nbsp;    60-day")
+c3 <- logreg(r, rebook90_w, 90, "&nbsp;    90-day")
+c4 <- logreg(r, rebook182_w, 182, "&nbsp;    6-month")
+
+# Row headers
+atitle <- data.frame(Measure = "<b>Re-booking rate, any cause</b>", CIodds = "", CIame="")
+btitle <- data.frame(Measure = "<b>Re-booking rate, new charges</b>", CIodds = "", CIame="")
+ctitle <- data.frame(Measure = "<b>Re-booking rate, warrants</b>", CIodds = "", CIame="")
+
+
+rbk <- bind_rows(atitle, a1,a2,a3,a4,
+                 btitle, b1,b2,b3,b4,
+                 ctitle, c1,c2,c3,c4)
+
+# Print table
+kable(x = rbk
+      , col.names = c("Measure", "Odds Ratio", "Average Marginal Effects")
+      , caption = "Logistic Regression Adjusted Rebooking Rates, First Release"
+      , escape = FALSE
+      ) %>% 
+  kable_paper() %>% 
+  kable_styling(font_size = 14) %>%
+  gsub("font-size: initial !important;", "font-size: 14pt !important;", .) %>% 
+  kable_styling(bootstrap_options = c("condensed"))
+
+
+
+```
+
+*Note: Confidence intervals are reported at the 95% level.*
+
+
+As a sensitivity test, a logistic regression model was tested that included an interaction term between the JRRP intervention and the maximum charge associated with the booking. The association with JRRP participation and 30-day re-booking due to warrants did not vary significantly according to the degree of the charge (results not shown). Previous bookings and days in jail were also tested as interaction terms, respectively, with the JRRP intervention, but the interaction terms were not significant in either model (results not shown).
+
+
+
+## Survival Analysis
+
+
+Survival analysis is a statistical technique used to measure the expected duration until an event occurs. For each participant, the number of days are measured until re-booking occurs or until the study period ends. With this method, each participant’s time period starts on the day they are released. The hazard function of re-booking is calculated by day after release for all participants. These analyses include only individuals’ first release in the time period from May 1, 2022 to March 31, 2023.
+
+Results from the Kaplan-Meier survival curves are similar to the unadjusted and adjusted re-booking findings. The probability of re-booking for any cause is very similar across all time intervals between the JRRP and non-JRRP groups. The probability of re-booking due to new charges is higher for the JRRP group as compared to the non-JRRP group, with re-booking rates diverging around 50 days and differences becoming more pronounced after around 120 days. Re-booking rates due to warrant services are lower for JRRP participants as compared to non-JRRP participants beginning around 25 days and continuing until 200 days, when rates converge. Of note, 95% confidence intervals overlapped for all three measures in all time intervals.
+
+
+{.tabset .tabset-fade data-height=500}
+-------
+### Any cause
+
+```{r}
+# Use the same dataframe, r, as created above
+
+# Fit survival data using the Kaplan-Meier method
+kmfit <- survfit(Surv(daysToNextBk, hasRB) ~ jrrp, data = r)
+# summary(kmfit, times=c(seq(0,360, by=10)))
+
+autoplot(kmfit, 
+         fun = 'event', 
+         xlim=c(0,250)) +
+  labs(x="Days",
+       y="Percent Re-Booked",
+       title="Probability of Re-Booking for Any Cause \nby Days After Release and JRRP Status",
+       fill="JRRP") +
+  theme_light() +
+  guides(color=FALSE)
+```
+
+*Note: Shading shows 95% confidence intervals.*
+
+A Cox Proportional Hazards Regression model was constructed for the three time-until-event variables (time until re-booking from any charge, new charges only, and warrant services only), controlling for sex, race/ethnicity, age group, maximum degree of the booking, and previous bookings (in binned groups). The exponentiated coefficients from the model represent hazards ratios, which measure the frequency of an event in one group compared to the frequency in another group, over time. The hazard ratios for the JRRP variable indicates the extent of the divergence of the survival curves attributable to the JRRP intervention, holding other control variables constant, 
+
+The JRRP intervention had a hazard ratio of 1.09 [95% CI: 0.99, 1.20] for re-booking for any cause and a hazard ratio of 1.22 [95% CI: 1.08, 1.37] for re-booking for new causes. These rates indicate higher re-booking rates over time for the JRRP groups as compared to the non-JRRP groups for both rates, with statistical significance for the re-booking due to new cause hazard ratio. The hazard ratio for re-booking due to warrant services was 0.96 [95% CI: 0.84, 1.10], suggesting that the re-booking rates over time are somewhat lower for the JRRP group as compared to the non-JRRP group.
+
+
+### New Charges
+```{r}
+
+# New charges only
+kmfit_nc <- survfit(Surv(daysToNextBk_nc, hasRB_nc) ~ jrrp, data = r)
+# summary(kmfit_nc)
+
+autoplot(kmfit_nc, 
+         fun = 'event', 
+         xlim=c(0,250)) +
+  labs(x="Days",
+       y="Percent Re-Booked",
+       title="Probability of Re-Booking for New Charges \nby Days After Release and JRRP Status",
+       fill="JRRP") +
+  theme_light() +
+  guides(color=FALSE)
+```
+
+*Note: Shading shows 95% confidence intervals.*
+
+A Cox Proportional Hazards Regression model was constructed for the three time-until-event variables (time until re-booking from any charge, new charges only, and warrant services only), controlling for sex, race/ethnicity, age group, maximum degree of the booking, and previous bookings (in binned groups). The hazard ratios for the JRRP variable indicates the extent of the divergence of the survival curves attributable to the JRRP intervention, holding other control variables constant, 
+
+The JRRP intervention had a hazard ratio of 1.09 [95% CI: 0.99, 1.20] for re-booking for any cause and a hazard ratio of 1.22 [95% CI: 1.08, 1.37] for re-booking for new causes. These rates indicate higher re-booking rates over time for the JRRP groups as compared to the non-JRRP groups for both rates, with statistical significance for the re-booking due to new cause hazard ratio. The hazard ratio for re-booking due to warrant services was 0.96 [95% CI: 0.84, 1.10], suggesting that the re-booking rates over time are somewhat lower for the JRRP group as compared to the non-JRRP group, though the hazard ratio is not statistically significant.
+
+
+### Warrant Services
+```{r}
+
+# Warrant Services only
+kmfit_w <- survfit(Surv(daysToNextBk_w, hasRB_w) ~ jrrp, data = r)
+# summary(kmfit_w)
+
+autoplot(kmfit_w, 
+         fun = 'event', 
+         xlim=c(0,250)) +
+  labs(x="Days",
+       y="Percent Re-Booked",
+       title="Probability of Re-Booking for Warrant Services \nby Days After Release and JRRP Status",
+       fill="JRRP") +
+  theme_light() +
+  guides(color=FALSE)
+
+
+#  Cox Model and hazard ratios - don't print
+cox <- coxph(Surv(daysToNextBk, hasRB) ~ jrrp + SEX + raceethn + ageBins + MAXDEGREE + prevBookingsbins, data = r)
+#summary(cox)
+
+cox_nc <- coxph(Surv(daysToNextBk_nc, hasRB_nc) ~ jrrp + SEX + raceethn + ageBins + MAXDEGREE + prevBookingsbins, data = r)
+#summary(cox_nc)
+
+cox_w <- coxph(Surv(daysToNextBk_w, hasRB_w) ~ jrrp + SEX + raceethn + ageBins + MAXDEGREE + prevBookingsbins, data = r)
+#summary(cox_w)
+
+
+```
+
+*Note: Shading shows 95% confidence intervals.*
+
+
+A Cox Proportional Hazards Regression model was constructed for the three time-until-event variables (time until re-booking from any charge, new charges only, and warrant services only), controlling for sex, race/ethnicity, age group, maximum degree of the booking, and previous bookings (in binned groups). The hazard ratios for the JRRP variable indicates the extent of the divergence of the survival curves attributable to the JRRP intervention, holding other control variables constant, 
+
+The JRRP intervention had a hazard ratio of 1.09 [95% CI: 0.99, 1.20] for re-booking for any cause and a hazard ratio of 1.22 [95% CI: 1.08, 1.37] for re-booking for new causes. These rates indicate higher re-booking rates over time for the JRRP groups as compared to the non-JRRP groups for both rates, with statistical significance for the re-booking due to new cause hazard ratio. The hazard ratio for re-booking due to warrant services was 0.96 [95% CI: 0.84, 1.10], suggesting that the re-booking rates over time are somewhat lower for the JRRP group as compared to the non-JRRP group, though the hazard ratio is not statistically significant.
+
+
+
+
+# Discussion
+
+This one-year early evaluation of the JRRP program demonstrates differential selection into the program, differences in utilization of services, and associations between participation in JRRP and re-booking risk. JRRP has grown in its first year from 125 interactions in its first full month in May 2022 to 573 interactions in March 2023. Participation rates have increased as well, with 40% of individuals electing to receive JRRP services in March 2023. The most commonly used services in JRRP relate to the legal system, underscoring the continued importance of collaboration between CJS and LDA. While staff members from both agencies provide information about the next steps in the legal process, they also bring unique contributions, such as the ability to provide client-specific information about the pretrial supervision and probation process (CJS) and the ability to connect clients with their court-appointed lawyer (LDA).
+
+Overall, study results find modest self-selection into participation in JRRP based on demographic characteristics, with participants more likely to be female, Hispanic, and younger; yet, the magnitude of differences is typically small, with increased participation of no more than four percentage points for any group (e.g., 28.2% of JRRP participants identified as Hispanic, any race whereas only 24.2% of non-JRRP participants identified as this racial/ethnic group). While it was thought that JRRP may be utilized more by those with short lengths of time in jail, there was no clear pattern, with individuals in jail for under 24 hours less likely to stop at JRRP but those who spent one day in jail slightly more likely to use JRRP. Booking reason and number of previous bookings show the largest differences in JRRP participation, as new booking charges are six percentage points more common for JRRP participants than non-participants and no previous bookings are nine percentage points more common (both differences are statistically significant). This indicates that JRRP may serve as a valuable resource for first-time offenders, who are likely to be less familiar with the criminal justice system, and those facing new charges, which carry with them new required proceedings. It may be worth exploring what other services may be added to JRRP to assist first-time offenders, who are more likely to utilize JRRP.
+
+Differences in characteristics between those who choose to receive JRRP services and those who do not should continue to be monitored as the program progresses. Information about JRRP should be provided to individuals pre-release, with added outreach to those who are less likely to utilize JRRP.
+
+Unadjusted re-booking rates, logistic regression models, and survival analyses all show the same conclusion: re-booking rates for new charges are higher for JRRP participants as compared to non-JRRP participants and re-booking rates for any cause are in a similar direction but not significant. However, re-booking rates due to warrant charges are consistently lower for 30-, 60-, and 90-day-periods, albeit estimates are not statistically significant. These trends may indicate where JRRP creates the most impact: in decreasing re-booking rates for warrants. It is plausible that re-booking rates for all causes and new charges do not show a decrease with participation in JRRP, as substantial constraints on available services and resources exist in the community beyond the criminal justice system (Summers et al., 2019). JRRP staff can provide referrals for fundamental services such as housing, food assistance, and mental health services, but cannot enroll clients directly into these services. Clients’ access to the services they require is stymied by the lack of available services in the community. A referral to a treatment bed or affordable housing carries far less impact if the waiting list spans multiple months. Thus, JRRP is limited by the lack of availability of much needed community resources. 
+
+This study has several limitations. First, unmeasured confounding factors may contribute to self-selection into the JRRP program as well as the observed higher re-booking rates of JRRP participants. Factors such as income, homeless status, housing stability, and employment are not measured and may confound re-booking rate outcome measures. For example, unsheltered individuals may be more likely to utilize JRRP due to increased needs and are also at higher risk of reoffending. Second, the booking reason (new charge vs. warrant service) reflects the reason associated with the first charge, which is usually related to the reason for the law enforcement encounter. This may lead to an underestimate of warrant service booking rates, since individuals who are stopped on a new charge but booked due to outstanding warrants would be counted in the new charge category only in this study. Warrant charges that are not associated with the law enforcement encounter reason may hold interesting findings if included in re-booking rates for warrant services in future work. Third, CJS collects data on criminogenic risk factors and risk scores using the Level of Service/Case Management Inventory (LS/CMI) and Public Safety Assessment (PSA) for their clients, which includes many but not all of those released from jail. Without including data on risk scores and criminogenic risk factors, this analysis may miss important predictors of recidivism. Future work should incorporate risk assessment scores for CJS clients who utilize JRRP.
+
+Future analyses may want to investigate other outcome measures, such as the impact of JRRP on rates of failure to appear in court and rates of CJS pretrial supervision initiation. Additional variables such as homeless status should be included in future analyses as well. A qualitative evaluation of the JRRP program may demonstrate meaningful impacts beyond the quantitative measures included in this analysis. LDA staff who work at JRRP can connect with individual’s pre-release through First Appearance Court (FAC). In this work, they can connect individuals to substance use disorder treatment and arrange for direct transportation from incarceration to treatment, which rarely happens in the JRRP program due to lack of available beds. As of now, these individuals do not pass through the JRRP program. Future work should incorporate FAC results, as these post-release efforts fall within the JRRP program, though they do not take place in the same physical space.
+
+As JRRP continues to grow, impact will be constrained by the broader shortage of community resources, with affordable housing, mental health and substance use disorder treatment capacity at the forefront. Local and state leaders should prioritize the expansion of these resources to help individuals stay out of jail and live healthy and stable lives. The JRRP program should continue to focus on how to best help individuals navigate the legal system, where JRRP has the potential to make the most impact . 
+
+In conclusion, early evaluation of the JRRP program shows a promising potential to lower re-booking rates due to warrant services, but associations between JRRP and overall re-booking rates and re-booking rates from new charges may be limited by JRRP’s role as a referral program and the broader lack of community resources. 
+
+
+# Acknowledgements
+
+I’m extremely grateful to my University of Utah Master of Public Policy Capstone committee: Dr. David Curtis (chair), Dr. Christian Sarver and Dr. Katie Durante. This project would not have been possible without your guidance and expertise. Thank you as well to Dr. Robert Forbis for your help editing this paper.
+
+I’m deeply thankful for my coworkers at Salt Lake County, whose partnership, dedication, and deep commitment to this work amazes and inspires me. A huge thank you to Karen Crompton and Beth Graham from Human Services, Kele Griffone and Brandi Hopkins from Criminal Justice Services, Chief Deputy Matt Dumont from the Sheriff’s Office, and John Krantz from the Criminal Justice Advisory Council.
+
+
+# References
+
+
+
